@@ -2,6 +2,7 @@
 ![Security](https://img.shields.io/badge/Security-Testing-green)
 ![Educational](https://img.shields.io/badge/Educational-Purpose-blue)
 
+
 # 🔓 CORS Vulnerability Exploit POC
 
 > **Professional CORS testing tool for security researchers and bug bounty hunters**
@@ -14,9 +15,9 @@ cd cors-poc
 
 # Open in browser
 open index.html
-
-![CORS POC Screenshot](/Screenshot_2025-10-16_14_13_54.png)
-
+```
+![CORS POC Screenshot](Screenshot_2025-10-16_14_13_54.png)
+```
 
 ⚡ Features
 Real-time CORS exploitation testing
