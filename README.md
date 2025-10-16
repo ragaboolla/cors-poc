@@ -14,8 +14,8 @@ cd cors-poc
 
 # Open in browser
 open index.html
-<img width="1366" height="768" alt="Screenshot_2025-10-16_14_13_54" src="https://github.com/user-attachments/assets/78a502ed-a6d1-42c3-928d-d1323dab2c9e" />
 
+![CORS POC Screenshot](/Screenshot_2025-10-16_14_13_54.png)
 
 
 ⚡ Features
